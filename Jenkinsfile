@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     stages {
-
         stage('Checkout Code') {
             steps {
                 checkout scm
@@ -11,7 +10,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t devops-web-app:$BUILD_NUMBER ./app'
+                sh 'docker build -t devops-web-app:${BUILD_NUMBER} ./app'
             }
         }
 
@@ -20,12 +19,11 @@ pipeline {
                 sh '''
                     docker stop devops-web-app || true
                     docker rm devops-web-app || true
-
                     docker run -d \
                         --name devops-web-app \
                         --network devops-network \
                         -p 8080:80 \
-                        devops-web-app:$BUILD_NUMBER
+                        devops-web-app:${BUILD_NUMBER}
                 '''
             }
         }
@@ -33,8 +31,17 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                    sleep 5
-                    curl --fail http://localhost:8080
+                    for i in {1..10}; do
+                        if curl --fail http://devops-web-app:80; then
+                            echo "Health check passed!"
+                            exit 0
+                        fi
+                        echo "Application not ready yet. Retrying..."
+                        sleep 2
+                    done
+
+                    echo "Health check failed."
+                    exit 1
                 '''
             }
         }
