@@ -1,0 +1,40 @@
+---
+- name: Prepare DevOps Project Environment
+  hosts: local
+  become: true
+
+  tasks:
+
+    - name: Create required project directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /home/bavly/devops-project/app
+        - /home/bavly/devops-project/terraform
+        - /home/bavly/devops-project/ansible
+
+    - name: Verify Docker is installed
+      command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Display Docker version
+      debug:
+        msg: "{{ docker_version.stdout }}"
+
+    - name: Verify Docker service is running
+      command: systemctl is-active docker
+      register: docker_service
+      changed_when: false
+
+    - name: Display Docker service status
+      debug:
+        msg: "Docker service status: {{ docker_service.stdout }}"
+
+    - name: Set permissions for application directory
+      file:
+        path: /home/bavly/devops-project/app
+        state: directory
+        mode: "0755"
